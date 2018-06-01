@@ -1,0 +1,47 @@
+plsql.execute <<-SQL
+CREATE OR REPLACE PROCEDURE CALCULAR_SIMULACION (Tasa_Nominal decimal, Total_Cuotas integer, Valor_Prestamo decimal) 
+IS
+i integer;
+n decimal(15,2);
+d decimal(15,4);
+numero_cuota integer;
+cuota_mensual decimal(15,2);
+abono_capital decimal(15,2);
+abono_interes decimal(15,2);
+saldo decimal(15,2);
+
+BEGIN
+saldo:= Valor_Prestamo;
+i :=1;
+
+
+DELETE FROM amortizacion;
+
+FOR i IN 1 .. Total_Cuotas loop
+
+n := Tasa_Nominal*Valor_Prestamo;
+d := 1 - (1+Tasa_Nominal)**(-Total_Cuotas);
+numero_cuota := numero_cuota + 1;
+cuota_mensual := n/d;
+abono_interes := Tasa_Nominal*saldo;
+abono_capital := cuota_mensual - abono_interes;
+saldo:= saldo - abono_capital;
+
+INSERT INTO amortizacion VALUES (numero_cuota, cuota_mensual, abono_capital, abono_interes, saldo);
+END LOOP;
+END;
+SQL
+
+plsql.execute <<-SQL
+CREATE OR REPLACE VIEW PLAN_AMORTIZACION AS
+
+(SELECT AVG(ABONO_INTERES) FROM amortizacion 
+order by NUMERO_CUOTA asc) PROMEDIO;
+
+ALTER TABLE amortizacion 
+ADD PROMEDIO number;
+SQL
+
+plsql.execute <<-SQL
+Codigo va acá
+SQL
